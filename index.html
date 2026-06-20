@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nanev.my.id - Dev Landing</title>
+    <style>
+        :root {
+            --bg-top: #f7efe0;
+            --bg-bottom: #e5f0f7;
+            --card-bg: #fffdf7;
+            --accent: #d26a36;
+            --accent-dark: #9f4d26;
+            --text-main: #2d2a26;
+            --text-soft: #5d5a54;
+            --border: #e4dcca;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", sans-serif;
+            color: var(--text-main);
+            background: linear-gradient(155deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            display: grid;
+            place-items: center;
+            padding: 20px;
+        }
+
+        .landing {
+            width: min(900px, 100%);
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 16px 42px rgba(62, 49, 33, 0.16);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #efe6d3;
+            color: #4e4639;
+            font-size: 0.85rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 14px 0 8px;
+            font-size: clamp(1.9rem, 5vw, 2.9rem);
+            line-height: 1.15;
+        }
+
+        .sub {
+            margin: 0 0 18px;
+            font-size: 1.05rem;
+            color: var(--text-soft);
+            max-width: 65ch;
+        }
+
+        .game {
+            margin-top: 20px;
+            border-top: 1px dashed var(--border);
+            padding-top: 18px;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 14px;
+        }
+
+        label {
+            font-weight: 700;
+            font-size: 0.96rem;
+        }
+
+        select,
+        button {
+            font: inherit;
+            border-radius: 10px;
+            border: 1px solid #ccbda5;
+            padding: 10px 14px;
+        }
+
+        button {
+            border: none;
+            cursor: pointer;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 700;
+            transition: transform 120ms ease, background 120ms ease;
+        }
+
+        button:hover {
+            background: var(--accent-dark);
+            transform: translateY(-1px);
+        }
+
+        .dice-wrap {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .die {
+            width: 84px;
+            height: 84px;
+            border-radius: 14px;
+            border: 2px solid #d5c4aa;
+            display: grid;
+            place-items: center;
+            background: #fff;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #52331f;
+            box-shadow: 0 4px 14px rgba(52, 41, 26, 0.12);
+        }
+
+        .die.rolling {
+            animation: dice-roll 180ms linear infinite;
+        }
+
+        .die.settled {
+            animation: dice-settle 220ms ease-out;
+        }
+
+        @keyframes dice-roll {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            25% {
+                transform: rotate(8deg) scale(1.06);
+            }
+
+            50% {
+                transform: rotate(-8deg) scale(0.94);
+            }
+
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+        }
+
+        @keyframes dice-settle {
+            0% {
+                transform: translateY(-6px) scale(0.96);
+                opacity: 0.7;
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .result {
+            margin: 0;
+            font-weight: 700;
+            color: #473a2e;
+        }
+    </style>
+</head>
+<body>
+    <main class="landing">
+        <span class="tag">Testing and Development Host</span>
+        <h1>nanev.my.id</h1>
+        <p class="sub">This domain is used as a landing space for testing deployments and development experiments. Below is a mini dice roller game for a quick check that JavaScript is working.</p>
+
+        <section class="game" aria-labelledby="dice-title">
+            <h2 id="dice-title">Mini Dice Roller</h2>
+            <div class="row">
+                <label for="dice-count">Number of dice</label>
+                <select id="dice-count">
+                    <option value="1">Single die</option>
+                    <option value="2">Two dice</option>
+                </select>
+                <button id="roll-btn" type="button">Roll Dice</button>
+            </div>
+
+            <div id="dice-wrap" class="dice-wrap" aria-live="polite"></div>
+            <p id="result" class="result">Click "Roll Dice" to start.</p>
+        </section>
+    </main>
+
+    <script>
+        (function () {
+            var countSelect = document.getElementById("dice-count");
+            var rollButton = document.getElementById("roll-btn");
+            var diceWrap = document.getElementById("dice-wrap");
+            var result = document.getElementById("result");
+            var rollTick = null;
+            var rollDone = null;
+
+            function rollOne() {
+                return Math.floor(Math.random() * 6) + 1;
+            }
+
+            function clearTimers() {
+                if (rollTick) {
+                    clearInterval(rollTick);
+                    rollTick = null;
+                }
+
+                if (rollDone) {
+                    clearTimeout(rollDone);
+                    rollDone = null;
+                }
+            }
+
+            function getValues(count) {
+                var values = [];
+
+                for (var i = 0; i < count; i += 1) {
+                    values.push(rollOne());
+                }
+
+                return values;
+            }
+
+            function renderDice(values, isRolling) {
+                diceWrap.innerHTML = "";
+
+                values.forEach(function (value, index) {
+                    var die = document.createElement("div");
+                    die.className = isRolling ? "die rolling" : "die settled";
+                    die.setAttribute("aria-label", "Die " + (index + 1) + " value " + value);
+                    die.textContent = String(value);
+                    diceWrap.appendChild(die);
+                });
+            }
+
+            function showFinal(values) {
+                var total = values.reduce(function (sum, value) { return sum + value; }, 0);
+
+                renderDice(values, false);
+                result.textContent = "You rolled: " + values.join(" + ") + " = " + total;
+            }
+
+            function play(withAnimation) {
+                var count = Number(countSelect.value);
+                clearTimers();
+
+                if (!withAnimation) {
+                    showFinal(getValues(count));
+                    return;
+                }
+
+                rollButton.disabled = true;
+                countSelect.disabled = true;
+                result.textContent = "Rolling...";
+                renderDice(getValues(count), true);
+
+                rollTick = setInterval(function () {
+                    renderDice(getValues(count), true);
+                }, 90);
+
+                rollDone = setTimeout(function () {
+                    clearTimers();
+                    showFinal(getValues(count));
+                    rollButton.disabled = false;
+                    countSelect.disabled = false;
+                }, 780);
+            }
+
+            rollButton.addEventListener("click", function () {
+                play(true);
+            });
+            countSelect.addEventListener("change", function () {
+                play(false);
+            });
+
+            play(false);
+        }());
+    </script>
+</body>
+</html>
